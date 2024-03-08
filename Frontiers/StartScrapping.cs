@@ -1,1 +1,1 @@
-record StartScrapping();
+record StartScrapping(int Actors);

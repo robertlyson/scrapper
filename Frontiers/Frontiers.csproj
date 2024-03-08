@@ -7,4 +7,10 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+      <PackageReference Include="NEST" Version="7.17.5" />
+      <PackageReference Include="Proto.Actor" Version="1.6.0" />
+      <PackageReference Include="ProtoActor.Plus" Version="1.5.0" />
+    </ItemGroup>
+
 </Project>

@@ -20,10 +20,9 @@ class FrontiersPageScrapperActor : IActor
     {
         if (context.Message is ScrapPage scrapPage)
         {
-            for (int i = scrapPage.Page.PageStart; i < scrapPage.Page.PageEnd; i++)
+            for (int i = scrapPage.Page.PageStart; i <= scrapPage.Page.PageEnd; i++)
             {
-                Console.WriteLine($"Handling page {i}");
-                
+                Console.WriteLine($"Handling page {i}");                
                 var articles = await GetArticles(i);
                 if (articles.Articles.Length == 0)
                 {

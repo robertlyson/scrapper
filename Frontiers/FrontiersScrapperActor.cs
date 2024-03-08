@@ -21,15 +21,19 @@ class FrontiersScrapperActor : IActor
     {
         if (context.Message is StartScrapping startScrapping)
         {
+            Console.WriteLine($"[{DateTime.UtcNow:F}] Starting scrapping");
+            
             while (true)
             {
+                Console.WriteLine($"[{DateTime.UtcNow:F}] Scrapping page {ScrollPageNumber}");
                 var articles = await GetArticles(ScrollPageNumber);
                 if (articles.Articles.Length == 0)
                 {
                     break;
                 }
 
-                var response = await _elasticClient.IndexManyAsync(articles.Articles);
+                var response = await _elasticClient.IndexManyAsync(articles.Articles.Select(x =>
+                    new EsArticle(x.Doi, x.Doi, x.Title, x.PublishedDate == string.Empty ? null : DateTime.Parse(x.PublishedDate))));
                 if (response.Errors)
                 {
                     throw new Exception("Failed to index articles to elastic search");
@@ -37,6 +41,8 @@ class FrontiersScrapperActor : IActor
 
                 ScrollPageNumber++;
             }
+            
+            Console.WriteLine($"[{DateTime.UtcNow:F}] Scrapping ended");
         }
     }
 
@@ -46,7 +52,7 @@ class FrontiersScrapperActor : IActor
         {
             var payload = new SearchPayload(Array.Empty<int>(), new SearchFilter(0, 0, 0, 0, 0, 0), false, 0,
                 string.Empty,
-                10, scrollPage);
+                100, scrollPage);
             var response =
                 await _httpClient.PostAsJsonAsync("https://www.frontiersin.org/api/v2/articles/search", payload);
 
@@ -83,4 +89,5 @@ class FrontiersScrapperActor : IActor
     record SearchResponse(Article[] Articles);
 
     record Article(string Doi, string Title, string PublishedDate);
+    record EsArticle(string Id, string Doi, string Title, DateTime? PublishedDate);
 }

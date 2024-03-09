@@ -1,9 +1,7 @@
-using System.Net;
-using System.Net.Http.Json;
-using Frontiers;
 using Nest;
 using Proto;
-using Page = Frontiers.Page;
+
+namespace Frontiers;
 
 class FrontiersScrapperActor : IActor
 {
@@ -19,13 +17,15 @@ class FrontiersScrapperActor : IActor
     }
 
     public int ScrollPageNumber { get; private set; }
+    public bool Processing { get; private set; }
 
     public async Task ReceiveAsync(IContext context)
     {
         var total = 600_000;
-        
-        if (context.Message is StartScrapping startScrapping)
+
+        if (context.Message is StartScrapping startScrapping && Processing == false)
         {
+            Processing = true;
             HandleStartScrapping(context, total, startScrapping);
         }
         
@@ -34,7 +34,8 @@ class FrontiersScrapperActor : IActor
             _children[stoppedProcessing.Pid] = true;
             if (_children.All(x => x.Value))
             {
-                await context.PoisonAsync(context.Self);
+                Processing = false;
+                _children.Clear();
             }
         }
     }

@@ -20,27 +20,32 @@ class FrontiersPageScrapperActor : IActor
     {
         if (context.Message is ScrapPage scrapPage)
         {
-            for (int i = scrapPage.Page.PageStart; i <= scrapPage.Page.PageEnd; i++)
-            {
-                Console.WriteLine($"Handling page {i}");                
-                var articles = await GetArticles(i);
-                if (articles.Articles.Length == 0)
-                {
-                    break;
-                }
+            await HandleScrapPage(context, scrapPage);
+        }
+    }
 
-                var response = await _elasticClient.IndexManyAsync(articles.Articles.Select(x =>
-                    new EsArticle(x.Doi, x.Doi, x.Title, x.PublishedDate == string.Empty ? null : DateTime.Parse(x.PublishedDate))));
-                if (response.Errors)
-                {
-                    throw new Exception("Failed to index articles to elastic search");
-                }
+    private async Task HandleScrapPage(IContext context, ScrapPage scrapPage)
+    {
+        for (int i = scrapPage.Page.PageStart; i <= scrapPage.Page.PageEnd; i++)
+        {
+            Console.WriteLine($"Handling page {i}");                
+            var articles = await GetArticles(i);
+            if (articles.Articles.Length == 0)
+            {
+                break;
             }
 
-            if (context.Parent is not null)
+            var response = await _elasticClient.IndexManyAsync(articles.Articles.Select(x =>
+                new EsArticle(x.Doi, x.Doi, x.Title, x.PublishedDate == string.Empty ? null : DateTime.Parse(x.PublishedDate))));
+            if (response.Errors)
             {
-                context.Send(context.Parent, new FinishedProcessingPages(context.Self));   
+                throw new Exception("Failed to index articles to elastic search");
             }
+        }
+
+        if (context.Parent is not null)
+        {
+            context.Send(context.Parent, new FinishedProcessingPages(context.Self));   
         }
     }
 

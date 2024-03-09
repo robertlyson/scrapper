@@ -9,6 +9,7 @@ class FrontiersScrapperActor : IActor
 {
     private readonly HttpClient _httpClient;
     private readonly IElasticClient _elasticClient;
+    private Dictionary<PID, bool> _children = new();
 
     public FrontiersScrapperActor(HttpClient httpClient, IElasticClient elasticClient)
     {
@@ -25,20 +26,35 @@ class FrontiersScrapperActor : IActor
         
         if (context.Message is StartScrapping startScrapping)
         {
-            var pageSize = 24;
-            var pages = total / pageSize;
-            var pagesPerActor = pages / startScrapping.Actors;
-            var array = Enumerable.Range(0, startScrapping.Actors)
-                .Select(x => new Page { PageStart = pagesPerActor * x, PageEnd = (pagesPerActor * x) + pagesPerActor })
-                .ToArray();
-
-            foreach (var page in array)
+            HandleStartScrapping(context, total, startScrapping);
+        }
+        
+        if (context.Message is StoppedProcessing stoppedProcessing)
+        {
+            _children[stoppedProcessing.Pid] = true;
+            if (_children.All(x => x.Value))
             {
-                var props = Props.FromProducer(() => new FrontiersPageScrapperActor(_httpClient, _elasticClient));
-                var pid = context.Spawn(props);
-
-                context.Send(pid, new ScrapPage(page, pageSize));
+                await context.PoisonAsync(context.Self);
             }
+        }
+    }
+
+    private void HandleStartScrapping(IContext context, int total, StartScrapping startScrapping)
+    {
+        var pageSize = 24;
+        var pages = total / pageSize;
+        var pagesPerActor = pages / startScrapping.Actors;
+        var array = Enumerable.Range(0, startScrapping.Actors)
+            .Select(x => new Page { PageStart = pagesPerActor * x, PageEnd = (pagesPerActor * x) + pagesPerActor })
+            .ToArray();
+
+        foreach (var page in array)
+        {
+            var props = Props.FromProducer(() => new FrontiersPageScrapperActor(_httpClient, _elasticClient));
+            var pid = context.Spawn(props);
+            _children[pid] = false;
+
+            context.Send(pid, new ScrapPage(page, pageSize));
         }
     }
 }

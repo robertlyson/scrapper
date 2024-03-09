@@ -36,6 +36,11 @@ class FrontiersPageScrapperActor : IActor
                     throw new Exception("Failed to index articles to elastic search");
                 }
             }
+
+            if (context.Parent is not null)
+            {
+                context.Send(context.Parent, new StoppedProcessing(context.Self));   
+            }
         }
     }
 

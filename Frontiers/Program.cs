@@ -13,7 +13,4 @@ ISimpleScheduler scheduler = new SimpleScheduler(context);
 scheduler
     .ScheduleTellRepeatedly(TimeSpan.FromSeconds(1), TimeSpan.FromHours(5), pid, new StartScrapping(25), out _);
 
-// This prevents the app from exiting
-// before the async work is done
-
 Console.ReadLine();

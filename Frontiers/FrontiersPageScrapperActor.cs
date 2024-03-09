@@ -39,7 +39,7 @@ class FrontiersPageScrapperActor : IActor
 
             if (context.Parent is not null)
             {
-                context.Send(context.Parent, new StoppedProcessing(context.Self));   
+                context.Send(context.Parent, new FinishedProcessingPages(context.Self));   
             }
         }
     }

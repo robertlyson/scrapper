@@ -29,7 +29,7 @@ class FrontiersScrapperActor : IActor
             HandleStartScrapping(context, total, startScrapping);
         }
         
-        if (context.Message is StoppedProcessing stoppedProcessing)
+        if (context.Message is FinishedProcessingPages stoppedProcessing)
         {
             _children[stoppedProcessing.Pid] = true;
             if (_children.All(x => x.Value))
